@@ -127,8 +127,9 @@ h2{display:flex;align-items:center}
   <div class="top"><span class="badge">完成イメージ</span><button class="link" id="back">‹ 直す</button></div>
   <img id="final" alt="完成したコラージュ画像">
   <button class="btn main" id="save" style="margin-top:14px">画像を保存する</button>
-  <p class="hint" id="msg">「画像を保存する」を押すと、保存や共有の画面が出ます。</p>
-  <div class="help"><b>保存できない時は</b><ol><li>上の画像を長押しして、「画像をダウンロード」(iPhoneは「写真に追加」)を選ぶ</li><li>それでもだめなら、画像の画面をスクリーンショットで撮る(いちばん確実です)</li></ol></div>
+  <button class="btn" id="share" style="margin-top:10px">共有する(LINEなどで送る)</button>
+  <p class="hint" id="msg">「画像を保存する」で、スマホに保存します。LINEなどで送りたい時は「共有する」を押してください。</p>
+  <div class="help"><b>保存できない時は</b><ol><li>「共有する」を押して、「フォト」(Googleフォト)や「マイドライブ」を選ぶ(iPhoneは「画像を保存」)</li><li>それでもだめなら、画像の画面をスクリーンショットで撮る(いちばん確実です)</li></ol></div>
 </main>
 
 <script>
@@ -138,6 +139,7 @@ const SZ={s:52,m:76,l:110},GAP=.3,BAND=240;
 const FC={white:['#ffffff','#1d2b2a'],black:['#111111','#ffffff'],navy:['#1f2a44','#ffffff']};
 const imgs=[],items=[],frame={on:false,type:'simple',s:{t:false,b:true,l:false,r:false},color:'white'};
 const out=document.createElement('canvas');out.width=out.height=S;
+function count(p){try{window.goatcounter&&window.goatcounter.count&&window.goatcounter.count({path:p,title:p,event:true});}catch(_){}}
 let useText=false,raf=0;
 
 function layout(n,W,H){const a=W/2,b=H/2;
@@ -284,25 +286,36 @@ $('fcolor').onchange=e=>{frame.color=e.target.value;preview();};
 function view(){const d=location.hash==='#done'&&imgs.length>=2;
   if(d){compose();$('final').src=out.toDataURL('image/png');}
   $('edit').hidden=d;$('done').hidden=!d;}
-$('go').onclick=()=>{fromGo=true;location.hash='done';};
+$('go').onclick=()=>{count('done');fromGo=true;location.hash='done';};
 $('back').onclick=()=>{if(fromGo){fromGo=false;history.back();}else location.hash='edit';};
 window.onhashchange=()=>{view();window.scrollTo(0,0);};
-$('save').onclick=async()=>{
-  const blob=await new Promise(r=>out.toBlob(r,'image/png'));
-  const file=new File([blob],'fuwafuwa-collage.png',{type:'image/png'});
+const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const say=m=>{$('msg').textContent=m;};
+async function getFile(){const blob=await new Promise(r=>out.toBlob(r,'image/png'));return new File([blob],'fuwafuwa-collage.png',{type:'image/png'});}
+async function shareImg(file){
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file]});say('共有の画面を開きました。保存先や送り先を選んでください。');return true;}
+    catch(e){if(e&&e.name==='AbortError')return true;}}
+  return false;}
+function downloadImg(file){
+  const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=file.name;document.body.appendChild(a);a.click();a.remove();
+  say('ダウンロードしました。スマホの「ダウンロード」フォルダやギャラリーを見てください。保存されていなければ、下の「保存できない時は」を試してね。');}
+$('save').onclick=async()=>{count('save');
+  const file=await getFile();
   try{const dl=window.claude?await claude.use('downloads'):null;
-    if(dl){await dl.save({filename:'fuwafuwa-collage.png',data:blob});$('msg').textContent='保存しました。ダウンロードの中を見てみてね。';return;}}
-  catch(e){if(e&&e.code==='declined'){$('msg').textContent='保存をやめました。';return;}}
-  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file]});$('msg').textContent='保存や共有の画面を開きました。「画像を保存」などを選んでください。';return;}}
-  catch(e){if(e&&e.name==='AbortError')return;}
-  try{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='fuwafuwa-collage.png';document.body.appendChild(a);a.click();a.remove();
-    $('msg').textContent='保存を試しました。保存されていなければ、下の「保存できない時は」を試してね。';}
-  catch(e){$('msg').textContent='うまくいきませんでした。下の「保存できない時は」を試してね。';}};
+    if(dl){await dl.save({filename:file.name,data:file});say('保存しました。ダウンロードの中を見てみてね。');return;}}
+  catch(e){if(e&&e.code==='declined'){say('保存をやめました。');return;}}
+  if(isIOS&&await shareImg(file))return;
+  try{downloadImg(file);}catch(e){say('うまくいきませんでした。下の「保存できない時は」を試してね。');}};
+$('share').onclick=async()=>{count('share');const file=await getFile();
+  if(!(await shareImg(file)))say('この機種では共有の画面が使えませんでした。「画像を保存する」を試してね。');};
 (async()=>{loadState();await loadImgs();ui();view();})();
 </script>
 <footer class="note"><details><summary>ご利用にあたって・連絡先</summary>
 <h3>画像と個人情報について</h3>
 <p>選んだ画像や入力した文字は、お使いのスマホの中だけで処理します。外部のサーバーには送らず、こちらでは受け取りません。</p>
+<h3>アクセス数の集計について</h3>
+<p>利用状況を知るために、アクセス解析サービス「GoatCounter」を使っています。ページを開いた回数、「完成画面を見る」「画像を保存する」を押した回数、使っているブラウザや画面の大きさ、おおまかな地域を、個人を特定しない形で集計します。クッキーは使いません。画像や入力した文字は送られません。</p>
 <h3>スマホの中に残るもの</h3>
 <p>選んだ画像や設定は、このブラウザの中に自動で保存されます。共有のスマホなどで使った時は、画面の「入力内容をすべて消す」で消してください。</p>
 <h3>画像の権利について</h3>
@@ -313,5 +326,6 @@ $('save').onclick=async()=>{
 <p id="contact"><a href="https://docs.google.com/forms/d/e/1FAIpQLSeVr35CJDoL0BbP1jZfDMchq-QWNKGsf3ChxTgEk5H15o67Rw/viewform" target="_blank" rel="noopener noreferrer" style="color:var(--ac);font-weight:700;display:inline-block;padding:6px 0">ご質問・不具合のご連絡はこちら(Googleフォーム)</a></p>
 <p>お返事が必要な時は、フォームに連絡先を書いてください。お返事できないこともあります。</p>
 </details></footer>
+<script data-goatcounter="https://fuwafuwa-collage.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>
