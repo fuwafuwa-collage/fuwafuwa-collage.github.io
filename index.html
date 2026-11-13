@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ふんわりコラージュ</title>
+<meta name="description" content="画像をえらんで、ふんわりつなげるコラージュ作成アプリ。スマホだけで、境目がなじむコラージュ画像が作れます。">
+<meta name="theme-color" content="#fff3f7">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' rx='26' fill='%23c93a75'/%3E%3Crect x='21' y='22' width='36' height='36' rx='6' fill='%23ffd3e4' transform='rotate(-8 39 40)'/%3E%3Crect x='39' y='38' width='36' height='36' rx='6' fill='%23ffffff'/%3E%3Ccircle cx='50' cy='49' r='4' fill='%23c93a75'/%3E%3Cpolygon points='44,70 54,58 70,70' fill='%23ffd3e4'/%3E%3C/svg%3E">
+
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff3f7;--sf:#ffffff;--ink:#4a3544;--mut:#85707d;--ac:#c93a75;--acin:#ffffff;--ln:#f4d4e1;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#2a1f27;--sf:#382a34;--ink:#fbeaf2;--mut:#d1b3c4;--ac:#ff8fb6;--acin:#3a1626;--ln:#5a4351;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#2a1f27;--sf:#382a34;--ink:#fbeaf2;--mut:#d1b3c4;--ac:#ff8fb6;--acin:#3a1626;--ln:#5a4351;color-scheme:dark}
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg);scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif}
+main{max-width:520px;margin:0 auto;padding:16px 16px 40px}
+h1{font-size:22px;margin:4px 0 16px}
+h2{font-size:16px;margin:0 0 8px}
+.sub{font-size:15px;font-weight:700;margin:14px 0 6px}
+section{background:var(--sf);border:1px solid var(--ln);border-radius:14px;padding:14px;margin-bottom:14px}
+.hint{color:var(--mut);font-size:14px;margin:6px 0 0}
+.btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;border:1px solid var(--ac);border-radius:12px;background:transparent;color:var(--ac);font:inherit;font-weight:700;cursor:pointer}
+.btn.main{background:var(--ac);color:var(--acin)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.th{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;border:1px solid var(--ln)}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.th .bar{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;background:rgba(0,0,0,.55)}
+.th button{flex:1;border:0;background:none;color:#fff;font-size:16px;min-height:30px;cursor:pointer}
+.pv{position:relative}
+.pv canvas,#final{width:100%;height:auto;display:block;border-radius:10px;border:1px solid var(--ln);background:#fff}
+.pv .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;color:#5d6f6c;font-size:15px}
+input[type=range]{width:100%;accent-color:var(--ac)}
+.sw{display:flex;align-items:center;gap:10px;font-weight:700;cursor:pointer}
+.sw input{width:22px;height:22px;accent-color:var(--ac)}
+.it{border:1px solid var(--ln);border-radius:12px;padding:10px;margin-top:10px}
+.it input[type=text]{width:100%;min-height:44px;border:1px solid var(--ln);border-radius:8px;padding:6px 10px;font:inherit;background:var(--bg);color:var(--ink)}
+.row{display:flex;gap:8px;margin-top:8px;align-items:center}
+.row select,.sel{flex:1;min-height:40px;border:1px solid var(--ln);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;padding:0 6px}
+.sel{width:100%;min-height:44px}
+.row .x{flex:none;width:44px;min-height:40px;border:1px solid var(--ln);border-radius:8px;background:none;color:var(--mut);font-size:18px;cursor:pointer}
+.opts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.opts.four{grid-template-columns:repeat(4,1fr)}
+.opt{position:relative;display:block}
+.opt input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.opt span{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:54px;padding:6px 4px;border:1px solid var(--ln);border-radius:10px;background:var(--bg);font-size:15px;font-weight:700;line-height:1.3}
+.opt small{color:var(--mut);font-size:12px;font-weight:400}
+.opt input:checked+span{box-shadow:inset 0 0 0 2px var(--ac);border-color:var(--ac)}
+.opt input:focus-visible+span{outline:3px solid var(--ac);outline-offset:2px}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.badge{background:var(--ac);color:var(--acin);font-weight:800;border-radius:999px;padding:6px 16px;font-size:16px}
+.link{background:none;border:0;color:var(--ac);font:inherit;font-weight:700;min-height:44px;cursor:pointer}
+.adj{display:flex;align-items:center;gap:6px;margin-top:8px}.adj span{flex:none;width:52px;font-size:14px;font-weight:700}.adj button{flex:1;min-height:44px;border:1px solid var(--ln);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;font-size:18px;cursor:pointer}.adj button:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.hd{display:flex;align-items:center;gap:12px;margin:2px 0 16px}
+.logo{flex:none;width:54px;height:54px;border-radius:19px;background:#c93a75;color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 6px 14px rgba(201,58,117,.25)}
+.hd h1{margin:0;font-size:23px;line-height:1.25}
+.tag{margin:2px 0 0;color:var(--mut);font-size:13px}
+section{border-radius:24px;box-shadow:0 6px 18px rgba(201,58,117,.08)}
+.btn{border-radius:999px;border-width:2px;min-height:52px}
+.btn.main{box-shadow:0 6px 14px rgba(201,58,117,.28)}
+.n{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--ac);color:var(--acin);font-size:14px;margin-right:8px;flex:none}
+h2{display:flex;align-items:center}
+.th{border-radius:16px}
+.pv canvas,#final{border-radius:18px}
+.opt span{border-radius:16px}
+.it{border-radius:18px}
+.sw{font-size:16px}
+.help{margin-top:14px;padding:12px 16px;border-radius:18px;background:var(--sf);border:1px solid var(--ln);font-size:14px}.help b{font-size:15px}.help ol{margin:6px 0 0;padding-left:20px}.help li{margin-top:4px}
+.note{max-width:520px;margin:0 auto;padding:0 16px 40px;font-size:14px;color:var(--mut)}.note details{background:var(--sf);border:1px solid var(--ln);border-radius:18px;padding:10px 16px}.note summary{cursor:pointer;font-weight:700;color:var(--ink);min-height:36px;display:flex;align-items:center}.note h3{font-size:14px;margin:14px 0 4px;color:var(--ink)}.note p{margin:0}.note ul{margin:0;padding-left:18px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main id="edit">
+  <header class="hd"><div class="logo" aria-hidden="true"><svg width="54" height="54" viewBox="0 0 96 96"><rect x="21" y="22" width="36" height="36" rx="6" fill="#ffd3e4" transform="rotate(-8 39 40)"/><rect x="39" y="38" width="36" height="36" rx="6" fill="#ffffff"/><circle cx="50" cy="49" r="4" fill="#c93a75"/><polygon points="44,70 54,58 70,70" fill="#ffd3e4"/></svg></div><div><h1>ふんわりコラージュ</h1><p class="tag">画像をえらんで、ふんわりつなげよう</p></div></header>
+  <section>
+    <h2><span class="n">1</span>画像をえらぶ(2〜4枚)</h2>
+    <input id="file" type="file" accept="image/*" multiple hidden>
+    <button class="btn" id="pick">画像を追加する</button>
+    <div class="thumbs" id="thumbs"></div>
+    <div id="adj"></div>
+    <p class="hint" id="cnt">まだ選んでいません</p>
+  </section>
+  <section>
+    <h2><span class="n">2</span>境目のなじませ方</h2>
+    <input id="blend" type="range" min="0" max="100" value="79" aria-label="境目のなじませ方">
+    <p class="hint">左は境目をくっきり、右はふんわり溶け合います。</p>
+    <div class="pv" style="margin-top:10px"><canvas id="pv" width="540" height="540"></canvas><div class="empty" id="emp">画像を2枚以上選ぶと、ここに表示されます</div></div>
+    <p class="hint">これは作成中のプレビューです。</p>
+  </section>
+  <section>
+    <label class="sw"><input id="useText" type="checkbox"><span class="n">3</span>文字を入れる</label>
+    <div id="textArea" hidden>
+      <div id="items"></div>
+      <button class="btn" id="addItem" style="margin-top:10px">＋ 項目を追加</button>
+      <p class="hint">位置は「上」「中央」「下」から選べます。<span id="midnote" hidden>枠を入れている間は、「上」「下」の文字が枠の中に入り、画像に文字がかぶらないよう「中央」は選べません。</span></p>
+      <label class="sw" style="margin-top:16px"><input id="useFrame" type="checkbox">枠を入れる</label>
+      <div id="frameArea" hidden>
+        <div class="sub">枠の種類</div>
+        <div class="opts" id="ftype">
+          <label class="opt"><input type="radio" name="ft" value="simple" checked><span>シンプル<small>無地の余白</small></span></label>
+          <label class="opt"><input type="radio" name="ft" value="line"><span>二重線<small>細い線で囲む</small></span></label>
+          <label class="opt"><input type="radio" name="ft" value="round"><span>角丸<small>丸い角と影</small></span></label>
+        </div>
+        <div class="sub">枠をつける場所(複数OK)</div>
+        <div class="opts four" id="fsides">
+          <label class="opt"><input type="checkbox" value="t"><span>上</span></label>
+          <label class="opt"><input type="checkbox" value="b" checked><span>下</span></label>
+          <label class="opt"><input type="checkbox" value="l"><span>左</span></label>
+          <label class="opt"><input type="checkbox" value="r"><span>右</span></label>
+        </div>
+        <div class="sub">枠の色</div>
+        <select class="sel" id="fcolor" aria-label="枠の色"><option value="white">白</option><option value="black">黒</option><option value="navy">紺</option></select>
+        <p class="hint">画像の大きさは変わらず、枠をつけた側に枠が足されます(仕上がりは枠の分だけ縦や横に長くなります)。文字が多い時は、文字が小さくなります。左右の枠は余白になります。枠の中の文字は、枠の色に合わせて自動で見やすい色になります。</p>
+      </div>
+    </div>
+  </section>
+  <button class="btn main" id="go" disabled>完成画面を見る</button>
+  <button class="btn" id="clear" style="margin-top:12px">入力内容をすべて消す</button>
+</main>
+
+<main id="done" hidden>
+  <div class="top"><span class="badge">完成イメージ</span><button class="link" id="back">‹ 直す</button></div>
+  <img id="final" alt="完成したコラージュ画像">
+  <button class="btn main" id="save" style="margin-top:14px">画像を保存する</button>
+  <p class="hint" id="msg">「画像を保存する」を押すと、保存や共有の画面が出ます。</p>
+  <div class="help"><b>保存できない時は</b><ol><li>上の画像を長押しして、「画像をダウンロード」(iPhoneは「写真に追加」)を選ぶ</li><li>それでもだめなら、画像の画面をスクリーンショットで撮る(いちばん確実です)</li></ol></div>
+</main>
+
+<script>
+const S=1080,$=id=>document.getElementById(id);
+const FONT='"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif';
+const SZ={s:52,m:76,l:110},GAP=.3,BAND=240;
+const FC={white:['#ffffff','#1d2b2a'],black:['#111111','#ffffff'],navy:['#1f2a44','#ffffff']};
+const imgs=[],items=[],frame={on:false,type:'simple',s:{t:false,b:true,l:false,r:false},color:'white'};
+const out=document.createElement('canvas');out.width=out.height=S;
+let useText=false,raf=0;
+
+function layout(n,W,H){const a=W/2,b=H/2;
+  if(n===1)return[[0,0,W,H]];
+  if(n===2)return[[0,0,a,H],[a,0,a,H]];
+  if(n===3)return[[0,0,W,b],[0,b,a,b],[a,b,a,b]];
+  return[[0,0,a,b],[a,0,a,b],[0,b,a,b],[a,b,a,b]];}
+function cover(c,m,w,h){const img=m.img,s=Math.max(w/img.naturalWidth,h/img.naturalHeight),sw=w/s,sh=h/s;
+  c.drawImage(img,(img.naturalWidth-sw)/2*(1-m.dx),(img.naturalHeight-sh)/2*(1-m.dy),sw,sh,0,0,w,h);}
+function fade(q,W,H,horiz,f){
+  const g=horiz?q.createLinearGradient(0,0,2*f,0):q.createLinearGradient(0,0,0,2*f);
+  for(let i=0;i<=8;i++){const t=i/8;g.addColorStop(t,`rgba(0,0,0,${t*t*(3-2*t)})`);}
+  q.fillStyle=g;q.fillRect(0,0,W,H);}
+function collage(W,H){
+  const k=document.createElement('canvas');k.width=W;k.height=H;const c=k.getContext('2d');
+  c.fillStyle='#fff';c.fillRect(0,0,W,H);
+  const f=+$('blend').value/100*140;
+  layout(imgs.length,W,H).forEach(([x,y,w,h],i)=>{
+    const l=x>0?x-f:x,t=y>0?y-f:y,r=x+w<W?x+w+f:x+w,b=y+h<H?y+h+f:y+h,pw=r-l,ph=b-t;
+    const o=document.createElement('canvas');o.width=pw;o.height=ph;const q=o.getContext('2d');
+    cover(q,imgs[i],pw,ph);
+    if(f>0){q.globalCompositeOperation='destination-in';if(x>0)fade(q,pw,ph,true,f);if(y>0)fade(q,pw,ph,false,f);}
+    c.drawImage(o,l,t);});
+  return k;}
+
+function lines(c,k,mw){return items.filter(i=>i.pos===k&&i.text.trim()).map(i=>{
+  let px=SZ[i.size];c.font=`800 ${px}px ${FONT}`;const w=c.measureText(i.text).width;if(w>mw)px*=mw/w;return{i,px};});}
+const height=ls=>ls.length?ls.reduce((a,l)=>a+l.px*(1+GAP),0)-ls[ls.length-1].px*GAP:0;
+function geom(c){
+  const s=frame.s,on=useText&&frame.on&&(s.t||s.b||s.l||s.r);
+  if(!on)return{on:false,x:0,y:0,w:S,h:S,top:0,bot:0,W:S,H:S};
+  const top=s.t?BAND:0,bot=s.b?BAND:0,l=s.l?90:0,r=s.r?90:0;
+  return{on:true,x:l,y:top,w:S,h:S,top,bot,tb:s.t,bb:s.b,W:S+l+r,H:S+top+bot};}
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+
+function compose(){
+  const c=out.getContext('2d'),g=geom(c);const[bg,fg]=FC[frame.color];
+  out.width=g.W;out.height=g.H;c.fillStyle=g.on?bg:'#fff';c.fillRect(0,0,g.W,g.H);
+  const col=collage(S,S);
+  if(g.on&&frame.type==='round'){
+    c.save();c.shadowColor='rgba(0,0,0,.35)';c.shadowBlur=30;c.fillStyle=bg;rr(c,g.x,g.y,g.w,g.h,40);c.fill();c.restore();
+    c.save();rr(c,g.x,g.y,g.w,g.h,40);c.clip();c.drawImage(col,g.x,g.y);c.restore();
+  }else c.drawImage(col,g.x,g.y);
+  if(g.on&&frame.type==='line'){
+    c.save();c.strokeStyle=fg;c.globalAlpha=.7;
+    c.lineWidth=4;c.strokeRect(g.x-14,g.y-14,g.w+28,g.h+28);
+    c.lineWidth=2;c.strokeRect(g.x-28,g.y-28,g.w+56,g.h+56);c.restore();}
+  if(useText)drawText(c,g,fg);}
+function drawText(c,g,fg){
+  for(const k of['top','mid','bot']){
+    const inBand=(k==='top'&&g.tb)||(k==='bot'&&g.bb);
+    const ls=lines(c,k,(inBand?g.W:g.w)-120);if(!ls.length)continue;
+    let tot=height(ls);const cx=inBand?g.W/2:g.x+g.w/2;
+    if(inBand){const av=BAND-70;if(tot>av){const m=av/tot;ls.forEach(l=>l.px*=m);tot=av;}}
+    let y=k==='top'?(inBand?(g.top-tot)/2:g.y+90):k==='bot'?(inBand?g.y+g.h+(g.bot-tot)/2:g.y+g.h-90-tot):g.y+(g.h-tot)/2;
+    c.textAlign='center';c.textBaseline='top';c.lineJoin='round';
+    ls.forEach(({i,px})=>{c.font=`800 ${px}px ${FONT}`;
+      if(inBand){c.fillStyle=fg;c.fillText(i.text,cx,y);}
+      else{const dk=i.color==='black';c.lineWidth=px/5;c.strokeStyle=dk?'rgba(255,255,255,.85)':'rgba(0,0,0,.6)';c.strokeText(i.text,cx,y);
+        c.fillStyle=dk?'#111':'#fff';c.fillText(i.text,cx,y);}
+      y+=px*(1+GAP);});}}
+
+function preview(){saveState();cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{
+  if(imgs.length<1){const v=$('pv');v.height=v.width;const p=v.getContext('2d');p.fillStyle='#fff';p.fillRect(0,0,v.width,v.height);return;}
+  compose();const p=$('pv');p.height=Math.round(p.width*out.height/out.width);p.getContext('2d').drawImage(out,0,0,p.width,p.height);});}
+function ui(){
+  const t=$('thumbs');t.innerHTML='';
+  imgs.forEach((m,i)=>{const d=document.createElement('div');d.className='th';
+    d.innerHTML='<img alt=""><div class="bar"><button data-a="l" data-i="'+i+'" aria-label="前へ">‹</button><button data-a="d" data-i="'+i+'" aria-label="削除">✕</button><button data-a="r" data-i="'+i+'" aria-label="後ろへ">›</button></div>';
+    d.querySelector('img').src=m.url;t.appendChild(d);});
+  const ad=$('adj');ad.innerHTML=imgs.length?'<p class="hint">矢印で、各画像の見える位置を動かせます。</p>'+imgs.map((m,i)=>'<div class="adj"><span>'+(i+1)+'枚目</span>'+[['l','←'],['u','↑'],['d','↓'],['r','→'],['z','戻す']].map(([d,t])=>'<button data-i="'+i+'" data-d="'+d+'" aria-label="'+(i+1)+'枚目を'+t+'">'+t+'</button>').join('')+'</div>').join(''):'';
+  $('cnt').textContent=imgs.length?imgs.length+'枚選択中(最大4枚)。‹ › で順番を入れ替えられます。':'まだ選んでいません';
+  $('pick').disabled=imgs.length>=4;
+  $('go').disabled=imgs.length<2;saveImgs();
+  $('emp').hidden=imgs.length>=2;
+  preview();}
+
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('collage',1);r.onupgradeneeded=()=>r.result.createObjectStore('s');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+async function saveImgs(){try{const db=await idb();db.transaction('s','readwrite').objectStore('s').put(imgs.map(m=>({blob:m.blob,dx:m.dx,dy:m.dy})),'imgs');}catch(_){}}
+async function loadImgs(){try{const db=await idb();
+  const v=await new Promise((res,rej)=>{const r=db.transaction('s').objectStore('s').get('imgs');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});
+  for(const o of v||[]){const url=URL.createObjectURL(o.blob),img=new Image();img.src=url;await img.decode();imgs.push({url,img,blob:o.blob,dx:o.dx||0,dy:o.dy||0});}}catch(_){}}
+function saveState(){try{localStorage.setItem('collage',JSON.stringify({v:2,blend:$('blend').value,useText,items,frame}));}catch(_){}}
+function loadState(){try{const s=JSON.parse(localStorage.getItem('collage')||'null');if(!s)return;
+  $('blend').value=s.v===2?s.blend:Math.min(100,Math.round(s.blend*200/140));useText=!!s.useText;$('useText').checked=useText;$('textArea').hidden=!useText;
+  items.splice(0,items.length,...(s.items||[]));
+  Object.assign(frame,s.frame||{});frame.s=Object.assign({t:false,b:true,l:false,r:false},frame.s);
+  $('useFrame').checked=frame.on;$('frameArea').hidden=!frame.on;
+  if(!['simple','line','round'].includes(frame.type))frame.type='simple';
+  document.querySelector('input[name=ft][value='+frame.type+']').checked=true;
+  document.querySelectorAll('#fsides input').forEach(el=>el.checked=!!frame.s[el.value]);$('fcolor').value=frame.color;
+  renderItems();}catch(_){}}
+const CLR='入力内容をすべて消す';let clr=0,fromGo=false;
+$('clear').onclick=()=>{
+  if(!clr){clr=setTimeout(()=>{clr=0;$('clear').textContent=CLR;},4000);$('clear').textContent='本当に全部消しますか?もう一度押すと消えます';return;}
+  clearTimeout(clr);clr=0;$('clear').textContent=CLR;
+  imgs.splice(0);items.splice(0);useText=false;Object.assign(frame,{on:false,type:'simple',color:'white',s:{t:false,b:true,l:false,r:false}});
+  $('blend').value=79;$('useText').checked=false;$('textArea').hidden=true;$('useFrame').checked=false;$('frameArea').hidden=true;
+  document.querySelector('input[name=ft][value=simple]').checked=true;
+  document.querySelectorAll('#fsides input').forEach(el=>el.checked=el.value==='b');$('fcolor').value='white';
+  renderItems();ui();window.scrollTo(0,0);};
+$('pick').onclick=()=>$('file').click();
+$('file').onchange=async e=>{
+  for(const f of [...e.target.files]){if(imgs.length>=4)break;
+    const url=URL.createObjectURL(f),img=new Image();img.src=url;
+    try{await img.decode();}catch(_){continue;}
+    imgs.push({url,img,blob:f,dx:0,dy:0});}
+  e.target.value='';ui();};
+$('thumbs').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+  const i=+b.dataset.i,a=b.dataset.a;
+  if(a==='d')imgs.splice(i,1);
+  else{const j=a==='l'?i-1:i+1;if(j>=0&&j<imgs.length)[imgs[i],imgs[j]]=[imgs[j],imgs[i]];}
+  ui();};
+$('adj').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+  const m=imgs[+b.dataset.i],d=b.dataset.d,st=.25,cl=v=>Math.max(-1,Math.min(1,v));
+  if(d==='l')m.dx=cl(m.dx-st);if(d==='r')m.dx=cl(m.dx+st);if(d==='u')m.dy=cl(m.dy-st);if(d==='d')m.dy=cl(m.dy+st);if(d==='z')m.dx=m.dy=0;saveImgs();
+  preview();};
+$('blend').oninput=preview;
+
+function renderItems(){
+  $('midnote').hidden=!frame.on;if(frame.on)items.forEach(i=>{if(i.pos==='mid')i.pos='bot';});
+  const box=$('items');box.innerHTML='';
+  items.forEach((it,i)=>{const d=document.createElement('div');d.className='it';d.dataset.i=i;
+    d.innerHTML='<input type="text" data-k="text" placeholder="例:12月20日 20時から" aria-label="文字">'+
+    '<div class="row"><select data-k="size" aria-label="大きさ"><option value="s">小</option><option value="m">中</option><option value="l">大</option></select>'+
+    '<select data-k="pos" aria-label="位置"><option value="top">上</option>'+(frame.on?'':'<option value="mid">中央</option>')+'<option value="bot">下</option></select>'+
+    '<select data-k="color" aria-label="色"><option value="white">白</option><option value="black">黒</option></select>'+
+    '<button class="x" data-del="1" aria-label="この項目を削除">✕</button></div>';
+    d.querySelectorAll('[data-k]').forEach(el=>el.value=it[el.dataset.k]);
+    box.appendChild(d);});
+  preview();}
+function addItem(){if(items.length>=8)return;items.push({text:'',size:'m',pos:'bot',color:'white'});renderItems();}
+$('useText').onchange=e=>{useText=e.target.checked;$('textArea').hidden=!useText;if(useText&&!items.length)addItem();preview();};
+$('addItem').onclick=addItem;
+$('items').oninput=e=>{const k=e.target.dataset.k;if(!k)return;items[+e.target.closest('.it').dataset.i][k]=e.target.value;preview();};
+$('items').onchange=$('items').oninput;
+$('items').onclick=e=>{if(!e.target.dataset.del)return;items.splice(+e.target.closest('.it').dataset.i,1);renderItems();};
+
+$('useFrame').onchange=e=>{frame.on=e.target.checked;$('frameArea').hidden=!frame.on;renderItems();};
+$('ftype').onchange=e=>{frame.type=e.target.value;preview();};
+$('fsides').onchange=e=>{frame.s[e.target.value]=e.target.checked;preview();};
+$('fcolor').onchange=e=>{frame.color=e.target.value;preview();};
+
+function view(){const d=location.hash==='#done'&&imgs.length>=2;
+  if(d){compose();$('final').src=out.toDataURL('image/png');}
+  $('edit').hidden=d;$('done').hidden=!d;}
+$('go').onclick=()=>{fromGo=true;location.hash='done';};
+$('back').onclick=()=>{if(fromGo){fromGo=false;history.back();}else location.hash='edit';};
+window.onhashchange=()=>{view();window.scrollTo(0,0);};
+$('save').onclick=async()=>{
+  const blob=await new Promise(r=>out.toBlob(r,'image/png'));
+  const file=new File([blob],'fuwafuwa-collage.png',{type:'image/png'});
+  try{const dl=window.claude?await claude.use('downloads'):null;
+    if(dl){await dl.save({filename:'fuwafuwa-collage.png',data:blob});$('msg').textContent='保存しました。ダウンロードの中を見てみてね。';return;}}
+  catch(e){if(e&&e.code==='declined'){$('msg').textContent='保存をやめました。';return;}}
+  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file]});$('msg').textContent='保存や共有の画面を開きました。「画像を保存」などを選んでください。';return;}}
+  catch(e){if(e&&e.name==='AbortError')return;}
+  try{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='fuwafuwa-collage.png';document.body.appendChild(a);a.click();a.remove();
+    $('msg').textContent='保存を試しました。保存されていなければ、下の「保存できない時は」を試してね。';}
+  catch(e){$('msg').textContent='うまくいきませんでした。下の「保存できない時は」を試してね。';}};
+(async()=>{loadState();await loadImgs();ui();view();})();
+</script>
+<footer class="note"><details><summary>ご利用にあたって・連絡先</summary>
+<h3>画像と個人情報について</h3>
+<p>選んだ画像や入力した文字は、お使いのスマホの中だけで処理します。外部のサーバーには送らず、こちらでは受け取りません。</p>
+<h3>スマホの中に残るもの</h3>
+<p>選んだ画像や設定は、このブラウザの中に自動で保存されます。共有のスマホなどで使った時は、画面の「入力内容をすべて消す」で消してください。</p>
+<h3>画像の権利について</h3>
+<p>ご自分が使う権利のある画像をお使いください。他の人が作った画像などは、その決まりに従ってください。作った画像の使い方の責任は、使う方にあります。</p>
+<h3>そのほか</h3>
+<ul><li>無料でお使いいただけますが、動作や保存の結果は保証できません。</li><li>機種やブラウザによって、保存の方法が変わることがあります。</li><li>書体の表示のために、Googleフォントを読み込んでいます。</li></ul>
+<h3>お問い合わせ</h3>
+<p id="contact"><a href="https://docs.google.com/forms/d/e/1FAIpQLSeVr35CJDoL0BbP1jZfDMchq-QWNKGsf3ChxTgEk5H15o67Rw/viewform" target="_blank" rel="noopener noreferrer" style="color:var(--ac);font-weight:700;display:inline-block;padding:6px 0">ご質問・不具合のご連絡はこちら(Googleフォーム)</a></p>
+<p>お返事が必要な時は、フォームに連絡先を書いてください。お返事できないこともあります。</p>
+</details></footer>
+</body>
+</html>
